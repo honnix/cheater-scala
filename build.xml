@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="build" name="cheater-scala">
+	<property environment="env" />
+	<property name="junit.output.dir" value="junit" />
+	<property name="debuglevel" value="source,lines,vars" />
+	<property name="debug" value="true" />
+	<property name="target" value="1.5" />
+	<property name="source" value="1.5" />
+	<property name="src.dir" value="src" />
+	<property name="test.dir" value="test" />
+	<property name="cert.dir" value="cert" />
+	<property name="classes.dir" value="classes" />
+	<property name="bin.dir" value="bin" />
+	<property name="etc.dir" value="etc" />
+	<property name="lib.dir" value="lib" />
+	<property name="meta.info.dir" value="META-INF" />
+	<property name="dist.dir" value="dist" />
+	<property name="dist.name" value="${ant.project.name}" />
+	<property name="dist.version" value="0.0.1" />
+	<property name="main.class" value="com.honnix.cheater.cli.Main" />
+	<property name="failonerror" value="true" />
+	<property name="fork" value="true" />
+	<property name="scala.home" value="/opt/scala-2.7.5.final" />
+	<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
+
+	<path id="build.classpath">
+		<pathelement location="${scala-library.jar}" />
+		<pathelement location="${classes.dir}" />
+		<pathelement location="${lib.dir}/commons-codec-1.3.jar" />
+		<pathelement location="${lib.dir}/commons-httpclient-3.1.jar" />
+		<pathelement location="${lib.dir}/commons-logging-1.1.1.jar" />
+		<pathelement location="${lib.dir}/log4j-1.2.15.jar" />
+	</path>
+
+	<taskdef resource="scala/tools/ant/antlib.xml">
+		<classpath>
+			<pathelement location="${scala.home}/lib/scala-compiler.jar" />
+			<pathelement location="${scala-library.jar}" />
+		</classpath>
+	</taskdef>
+
+	<target name="init">
+		<mkdir dir="${classes.dir}" />
+		<mkdir dir="${bin.dir}" />
+	</target>
+
+	<target name="clean">
+		<delete dir="${classes.dir}" />
+	</target>
+
+	<target depends="clean" name="distclean">
+		<delete dir="${bin.dir}" includes="*.jar" />
+		<delete dir="${dist.dir}" />
+	</target>
+	<target depends="build-project, build-cert" name="build" />
+
+	<target depends="init" name="build-project">
+		<scalac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="build.classpath" force="changed">
+			<include name="**/*.scala" />
+		</scalac>
+	</target>
+
+	<target name="build-cert">
+		<javac debug="${debug}" debuglevel="${debuglevel}" destdir="${classes.dir}" source="${source}" target="${target}">
+			<src path="${cert.dir}" />
+		</javac>
+	</target>
+
+	<target depends="init" name="pack-src">
+		<zip destfile="${classes.dir}/${src.dir}.zip">
+			<zipfileset dir="${src.dir}" />
+		</zip>
+		<zip destfile="${classes.dir}/${cert.dir}.zip">
+			<zipfileset dir="${cert.dir}" />
+		</zip>
+	</target>
+
+	<target depends="pack-src, build" name="jar">
+		<jar destfile="${bin.dir}/${dist.name}-${dist.version}.jar">
+			<fileset dir="${classes.dir}" excludes="**/Test*.class,InstallCert*.class,${cert.dir}.zip" />
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Class-Path" value="../etc/ ../lib/commons-codec-1.3.jar ../lib/commons-httpclient-3.1.jar ../lib/commons-logging-1.1.1.jar ../lib/log4j-1.2.15.jar" />
+				<attribute name="Main-Class" value="${main.class}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target depends="pack-src, build" name="jar-cert">
+		<jar destfile="${bin.dir}/${cert.dir}.jar">
+			<fileset dir="${classes.dir}" includes="InstallCert*.class,${cert.dir}.zip" />
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Main-Class" value="InstallCert" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target depends="jar,jar-cert" name="dist">
+		<delete dir="${dist.dir}" />
+		<mkdir dir="${dist.dir}/${dist.name}-${dist.version}" />
+		<mkdir dir="${dist.dir}/${dist.name}-${dist.version}/${bin.dir}" />
+		<mkdir dir="${dist.dir}/${dist.name}-${dist.version}/${etc.dir}" />
+		<mkdir dir="${dist.dir}/${dist.name}-${dist.version}/${lib.dir}" />
+		<copy todir="${dist.dir}/${dist.name}-${dist.version}/${bin.dir}">
+			<fileset dir="${bin.dir}" />
+		</copy>
+		<chmod file="${dist.dir}/${dist.name}-${dist.version}/${bin.dir}/${dist.name}.sh" perm="u+x" />
+		<copy todir="${dist.dir}/${dist.name}-${dist.version}/${etc.dir}">
+			<fileset dir="${etc.dir}" />
+		</copy>
+		<copy todir="${dist.dir}/${dist.name}-${dist.version}/${lib.dir}">
+			<fileset dir="${lib.dir}" />
+		</copy>
+	</target>
+</project>
